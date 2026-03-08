@@ -2,12 +2,12 @@
 // CANU Grow — Supabase API Layer
 // ============================================
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- Auth ---
 
 async function signInWithMagicLink(email) {
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await db.auth.signInWithOtp({
     email: email,
     options: { emailRedirectTo: window.location.origin + window.location.pathname }
   });
@@ -15,17 +15,17 @@ async function signInWithMagicLink(email) {
 }
 
 async function signOut() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await db.auth.signOut();
   if (error) throw error;
 }
 
 async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await db.auth.getSession();
   return session;
 }
 
 function onAuthChange(callback) {
-  supabase.auth.onAuthStateChange(callback);
+  db.auth.onAuthStateChange(callback);
 }
 
 // --- Members ---
@@ -35,7 +35,7 @@ async function getCurrentMember() {
   if (!session) return null;
 
   const email = session.user.email;
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('members')
     .select('*')
     .eq('email', email)
@@ -46,7 +46,7 @@ async function getCurrentMember() {
 }
 
 async function registerMember(email, displayName) {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('members')
     .insert({ email: email, display_name: displayName })
     .select()
@@ -61,7 +61,7 @@ async function registerMember(email, displayName) {
 }
 
 async function getMembersList() {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('members')
     .select('*')
     .order('total_shifts', { ascending: false });
@@ -73,7 +73,7 @@ async function getMembersList() {
 // --- Jobs ---
 
 async function getJobs() {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('jobs')
     .select('*')
     .order('title');
@@ -84,7 +84,7 @@ async function getJobs() {
 
 async function createJob(jobData) {
   const member = await getCurrentMember();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('jobs')
     .insert({
       title: jobData.title,
@@ -101,7 +101,7 @@ async function createJob(jobData) {
 }
 
 async function deleteJob(jobId) {
-  const { error } = await supabase
+  const { error } = await db
     .from('jobs')
     .delete()
     .eq('id', jobId);
@@ -115,7 +115,7 @@ async function getShiftsForWeek(weekStart) {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
-  const { data: shifts, error } = await supabase
+  const { data: shifts, error } = await db
     .from('shifts')
     .select('*')
     .gte('date', formatDateISO(weekStart))
@@ -127,7 +127,7 @@ async function getShiftsForWeek(weekStart) {
 
   // Fetch signups for these shifts
   const shiftIds = shifts.map(s => s.id);
-  const { data: signups } = await supabase
+  const { data: signups } = await db
     .from('signups')
     .select('*')
     .in('shift_id', shiftIds)
@@ -147,7 +147,7 @@ async function getShiftsForWeek(weekStart) {
 async function getOpenShifts() {
   const today = formatDateISO(new Date());
 
-  const { data: shifts, error } = await supabase
+  const { data: shifts, error } = await db
     .from('shifts')
     .select('*')
     .gte('date', today)
@@ -159,7 +159,7 @@ async function getOpenShifts() {
   const shiftIds = shifts.map(s => s.id);
   if (shiftIds.length === 0) return [];
 
-  const { data: signups } = await supabase
+  const { data: signups } = await db
     .from('signups')
     .select('*')
     .in('shift_id', shiftIds)
@@ -178,7 +178,7 @@ async function getOpenShifts() {
 
 async function createShift(shiftData) {
   const member = await getCurrentMember();
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('shifts')
     .insert({
       job_id: shiftData.job_id || null,
@@ -199,7 +199,7 @@ async function createShift(shiftData) {
 }
 
 async function updateShift(shiftId, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('shifts')
     .update(updates)
     .eq('id', shiftId)
@@ -211,7 +211,7 @@ async function updateShift(shiftId, updates) {
 }
 
 async function deleteShift(shiftId) {
-  const { error } = await supabase
+  const { error } = await db
     .from('shifts')
     .delete()
     .eq('id', shiftId);
@@ -224,7 +224,7 @@ async function deleteShift(shiftId) {
 async function signUp(shiftId) {
   const member = await getCurrentMember();
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('signups')
     .insert({
       shift_id: shiftId,
@@ -241,14 +241,14 @@ async function signUp(shiftId) {
   }
 
   // Increment shift count
-  await supabase.rpc('increment_member_shifts', { member_uuid: member.id });
+  await db.rpc('increment_member_shifts', { member_uuid: member.id });
   return data;
 }
 
 async function cancelSignup(shiftId) {
   const member = await getCurrentMember();
 
-  const { error } = await supabase
+  const { error } = await db
     .from('signups')
     .update({ status: 'cancelled' })
     .eq('shift_id', shiftId)
@@ -257,12 +257,12 @@ async function cancelSignup(shiftId) {
 
   if (error) throw error;
 
-  await supabase.rpc('decrement_member_shifts', { member_uuid: member.id });
+  await db.rpc('decrement_member_shifts', { member_uuid: member.id });
 }
 
 async function assignMember(shiftId, memberEmail) {
   // Look up the member
-  const { data: member, error: memberErr } = await supabase
+  const { data: member, error: memberErr } = await db
     .from('members')
     .select('*')
     .eq('email', memberEmail)
@@ -272,7 +272,7 @@ async function assignMember(shiftId, memberEmail) {
 
   const admin = await getCurrentMember();
 
-  const { error } = await supabase
+  const { error } = await db
     .from('signups')
     .insert({
       shift_id: shiftId,
@@ -287,7 +287,7 @@ async function assignMember(shiftId, memberEmail) {
     throw error;
   }
 
-  await supabase.rpc('increment_member_shifts', { member_uuid: member.id });
+  await db.rpc('increment_member_shifts', { member_uuid: member.id });
 }
 
 async function getMySignups() {
@@ -296,7 +296,7 @@ async function getMySignups() {
 
   const today = formatDateISO(new Date());
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('signups')
     .select('*, shifts(*)')
     .eq('member_id', member.id)
@@ -324,7 +324,7 @@ async function getMySignups() {
 // --- Config ---
 
 async function getConfig(key) {
-  const { data } = await supabase
+  const { data } = await db
     .from('config')
     .select('value')
     .eq('key', key)
