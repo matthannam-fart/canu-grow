@@ -17,7 +17,7 @@ create table members (
 create table jobs (
   id uuid primary key default gen_random_uuid(),
   title text not null,
-  category text not null check (category in ('watering', 'planting', 'harvesting', 'maintenance', 'monitoring')),
+  category text not null check (category in ('maintenance', 'fertilize', 'harvest')),
   description text default '',
   default_capacity integer default 3,
   created_by uuid references members(id),

@@ -21,11 +21,9 @@
   --text-soft:   #6b5e4e;
   --border:      #ddd5c5;
 
-  --cat-watering:    #6ea3b8;
-  --cat-planting:    #8fac6e;
-  --cat-harvesting:  #d4845a;
-  --cat-maintenance: #c4a882;
-  --cat-monitoring:  #6fa17a;
+  --cat-maintenance: #6ea3b8;
+  --cat-fertilize:   #8fac6e;
+  --cat-harvest:     #d4845a;
 
   --radius:      10px;
   --radius-sm:   6px;

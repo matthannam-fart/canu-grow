@@ -88,11 +88,9 @@
 
       <div class="category-legend">
         <h3>Categories</h3>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-watering)"></span> Watering</div>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-planting)"></span> Planting</div>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-harvesting)"></span> Harvesting</div>
         <div class="legend-item"><span class="legend-dot" style="background:var(--cat-maintenance)"></span> Maintenance</div>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-monitoring)"></span> Monitoring</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-fertilize)"></span> Fertilize</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-harvest)"></span> Harvest</div>
       </div>
 
       <div class="my-commitments">
@@ -112,11 +110,9 @@
           <h2>Job Board</h2>
           <div class="view-toggle">
             <button class="active" onclick="setJobBoardFilter('all', this)">All</button>
-            <button onclick="setJobBoardFilter('watering', this)">Watering</button>
-            <button onclick="setJobBoardFilter('planting', this)">Planting</button>
-            <button onclick="setJobBoardFilter('harvesting', this)">Harvesting</button>
             <button onclick="setJobBoardFilter('maintenance', this)">Maintenance</button>
-            <button onclick="setJobBoardFilter('monitoring', this)">Monitoring</button>
+            <button onclick="setJobBoardFilter('fertilize', this)">Fertilize</button>
+            <button onclick="setJobBoardFilter('harvest', this)">Harvest</button>
           </div>
         </div>
         <p style="font-size:14px;color:var(--text-soft);margin-bottom:16px;">Open shifts that need members. Click to sign up.</p>
@@ -181,11 +177,9 @@
               <div class="form-group">
                 <label>Category</label>
                 <select id="job-category">
-                  <option value="watering">Watering</option>
-                  <option value="planting">Planting</option>
-                  <option value="harvesting">Harvesting</option>
                   <option value="maintenance">Maintenance</option>
-                  <option value="monitoring">Monitoring</option>
+                  <option value="fertilize">Fertilize</option>
+                  <option value="harvest">Harvest</option>
                 </select>
               </div>
               <div class="form-group">
@@ -318,11 +312,9 @@
           <div class="form-group">
             <label>Category</label>
             <select id="edit-category">
-              <option value="watering">Watering</option>
-              <option value="planting">Planting</option>
-              <option value="harvesting">Harvesting</option>
               <option value="maintenance">Maintenance</option>
-              <option value="monitoring">Monitoring</option>
+              <option value="fertilize">Fertilize</option>
+              <option value="harvest">Harvest</option>
             </select>
           </div>
           <div class="form-group"><label>Start Time</label><input type="time" id="edit-start"></div>
