@@ -89,7 +89,7 @@ button {
   gap: 10px;
 }
 
-.header-brand .logo { font-size: 28px; }
+.header-logo { height: 44px; width: auto; }
 .header-brand .wordmark { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--sage-dark); }
 .header-brand .subtitle { font-size: 11px; color: var(--text-soft); margin-top: -2px; }
 
@@ -825,7 +825,8 @@ button {
   box-shadow: var(--shadow-lg);
 }
 
-.auth-card .logo { font-size: 48px; margin-bottom: 16px; }
+.auth-logo { max-width: 220px; height: auto; margin-bottom: 16px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 .auth-card h1 { font-size: 28px; color: var(--sage-dark); margin-bottom: 4px; }
 .auth-card .subtitle { color: var(--text-soft); font-size: 13px; margin-bottom: 24px; }
 
