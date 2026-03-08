@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CANU Grow</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card" id="auth-card">
+      <div class="logo">🌿</div>
+      <h1>CANU Grow</h1>
+      <p class="subtitle">University of Manitoba</p>
+
+      <!-- Step 1: Enter email + join code -->
+      <div id="auth-step-login">
+        <div class="join-code-section">
+          <label>Join Code</label>
+          <input type="text" id="join-code" placeholder="Enter join code" autocomplete="off">
+        </div>
+        <input type="email" id="login-email" placeholder="Your email address">
+        <input type="text" id="login-name" placeholder="Your name">
+        <button class="btn-primary" onclick="handleLogin()">Send Login Link</button>
+        <p class="hint">We'll email you a magic link — no password needed.</p>
+      </div>
+
+      <!-- Step 2: Check your email -->
+      <div id="auth-step-sent" style="display:none;">
+        <div class="auth-success">
+          <div class="icon">📬</div>
+          <h2>Check your email</h2>
+          <p>We sent a login link to <strong id="sent-email"></strong>. Click the link to sign in.</p>
+          <p class="hint" style="margin-top:16px;">Didn't get it? Check spam, or <a href="#" onclick="showLoginStep()">try again</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN APP (hidden until auth) ============ -->
+  <div class="app-container" id="app-container" style="display:none;">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-brand">
+        <span class="logo">🌿</span>
+        <div>
+          <div class="wordmark">CANU Grow</div>
+          <div class="subtitle">University of Manitoba</div>
+        </div>
+      </div>
+
+      <nav class="header-nav">
+        <button onclick="showView('job-board')">Job Board</button>
+        <button class="active" onclick="showView('calendar')">Calendar</button>
+        <button onclick="showView('my-schedule')">My Schedule</button>
+        <button id="nav-members" style="display:none" onclick="showView('members')">Members</button>
+        <button id="nav-admin" style="display:none" onclick="showView('admin')">Admin</button>
+      </nav>
+
+      <div class="user-pill" style="cursor:pointer;" onclick="handleSignOut()">
+        <div class="user-avatar" id="user-avatar"></div>
+        <span id="user-name-display"></span>
+      </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="mini-calendar">
+        <div class="mini-calendar-header">
+          <button onclick="miniCalPrev()">&lsaquo;</button>
+          <h3 id="mini-cal-month"></h3>
+          <button onclick="miniCalNext()">&rsaquo;</button>
+        </div>
+        <div class="mini-calendar-grid" id="mini-cal-grid"></div>
+      </div>
+
+      <div class="category-legend">
+        <h3>Categories</h3>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-watering)"></span> Watering</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-planting)"></span> Planting</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-harvesting)"></span> Harvesting</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-maintenance)"></span> Maintenance</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cat-monitoring)"></span> Monitoring</div>
+      </div>
+
+      <div class="my-commitments">
+        <h3>My Commitments</h3>
+        <div id="my-commitments-list">
+          <p style="font-size:13px;color:var(--text-soft);">Loading...</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- Job Board -->
+      <div class="job-board" id="view-job-board" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <h2>Job Board</h2>
+          <div class="view-toggle">
+            <button class="active" onclick="setJobBoardFilter('all', this)">All</button>
+            <button onclick="setJobBoardFilter('watering', this)">Watering</button>
+            <button onclick="setJobBoardFilter('planting', this)">Planting</button>
+            <button onclick="setJobBoardFilter('harvesting', this)">Harvesting</button>
+            <button onclick="setJobBoardFilter('maintenance', this)">Maintenance</button>
+            <button onclick="setJobBoardFilter('monitoring', this)">Monitoring</button>
+          </div>
+        </div>
+        <p style="font-size:14px;color:var(--text-soft);margin-bottom:16px;">Open shifts that need members. Click to sign up.</p>
+        <div id="job-board-content"></div>
+      </div>
+
+      <!-- Calendar -->
+      <div id="view-calendar">
+        <div class="week-nav">
+          <div class="week-nav-controls">
+            <button class="btn-nav" onclick="prevWeek()">&lsaquo; Prev</button>
+            <button class="btn-nav" onclick="goToday()">Today</button>
+            <button class="btn-nav" onclick="nextWeek()">Next &rsaquo;</button>
+          </div>
+          <h2 id="week-title"></h2>
+          <div class="view-toggle">
+            <button class="active" onclick="setViewMode('week', this)">Week</button>
+            <button onclick="setViewMode('day', this)">Day</button>
+          </div>
+        </div>
+        <div class="week-view" id="week-view">
+          <div class="week-grid" id="week-grid"></div>
+        </div>
+        <div class="day-view" id="day-view">
+          <div id="day-view-content"></div>
+        </div>
+      </div>
+
+      <!-- My Schedule -->
+      <div class="my-schedule" id="view-my-schedule">
+        <div class="my-schedule-header"><h2>My Schedule</h2></div>
+        <div id="my-schedule-content"></div>
+      </div>
+
+      <!-- Members -->
+      <div class="members-view" id="view-members">
+        <h2 style="margin-bottom:16px;">Members</h2>
+        <input type="text" class="search-input" placeholder="Search members..." oninput="filterMembers(this.value)">
+        <table class="members-table">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Total Shifts</th><th>Joined</th><th>Admin</th></tr>
+          </thead>
+          <tbody id="members-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Admin -->
+      <div class="admin-view" id="view-admin">
+        <h2 style="margin-bottom:16px;">Admin Dashboard</h2>
+
+        <div class="admin-section">
+          <h3>Jobs</h3>
+          <p style="font-size:13px;color:var(--text-soft);margin-bottom:12px;">Define reusable job templates, then schedule them as shifts.</p>
+          <div id="jobs-list"></div>
+          <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+            <h4 style="font-size:14px;margin-bottom:8px;">Add New Job</h4>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Job Title</label>
+                <input type="text" id="job-title" placeholder="e.g. Morning Watering">
+              </div>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="job-category">
+                  <option value="watering">Watering</option>
+                  <option value="planting">Planting</option>
+                  <option value="harvesting">Harvesting</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="monitoring">Monitoring</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Default Capacity</label>
+                <input type="number" id="job-capacity" min="1" max="6" value="3">
+              </div>
+              <div class="form-group full-width">
+                <label>Description</label>
+                <textarea id="job-description" placeholder="What members should know..."></textarea>
+              </div>
+              <div class="form-group full-width">
+                <button class="btn-primary" onclick="handleCreateJob()">Add Job</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <h3>Schedule Shift</h3>
+          <p style="font-size:13px;color:var(--text-soft);margin-bottom:12px;">Pick a job and assign it to a date and time.</p>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Job</label>
+              <select id="shift-job"><option value="">— Select a job —</option></select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="shift-date">
+            </div>
+            <div class="form-group">
+              <label>Start Time</label>
+              <input type="time" id="shift-start">
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input type="time" id="shift-end">
+            </div>
+            <div class="form-group">
+              <label>Capacity Override</label>
+              <input type="number" id="shift-capacity" min="1" max="6" placeholder="From job">
+            </div>
+            <div class="form-group full-width">
+              <button class="btn-primary" onclick="handleCreateShift()">Schedule Shift</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <h3>Tools</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-outline" onclick="handleExportCSV()">Export Signups CSV</button>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <h3>Upcoming Shifts</h3>
+          <div id="admin-shifts-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL -->
+    <aside class="right-panel">
+      <div class="stat-card">
+        <div class="stat-label">Open Shifts</div>
+        <div class="stat-value" id="stat-open">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Members</div>
+        <div class="stat-value" id="stat-members">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Filled Slots</div>
+        <div class="stat-value" id="stat-filled">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">My Shifts This Week</div>
+        <div class="stat-value" id="stat-my-shifts">—</div>
+      </div>
+      <div class="reminder-card" id="upcoming-reminder" style="display:none;">
+        <h4>Coming Up</h4>
+        <p id="upcoming-reminder-text"></p>
+      </div>
+      <div class="active-members">
+        <h3>Active Members</h3>
+        <div id="active-members-list"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- SHIFT DETAIL MODAL -->
+  <div class="modal-overlay" id="shift-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div><span class="category-badge" id="modal-category"></span></div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h2 class="modal-title" id="modal-title"></h2>
+        <div class="modal-meta" id="modal-meta"></div>
+        <p class="modal-description" id="modal-description"></p>
+        <div class="modal-capacity" id="modal-capacity"></div>
+        <ul class="member-list" id="modal-members"></ul>
+        <div id="modal-empty-slots"></div>
+        <div class="modal-actions" id="modal-actions"></div>
+        <div id="modal-assign" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <h4 style="font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-soft);margin-bottom:8px;">Assign Member</h4>
+          <div style="display:flex;gap:8px;">
+            <select id="assign-member-select" class="search-input" style="flex:1;width:auto;margin-bottom:0;">
+              <option value="">— Select a member —</option>
+            </select>
+            <button class="btn-primary" style="padding:8px 16px;" onclick="handleAssignMember()">Assign</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT SHIFT MODAL -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Edit Shift</h2>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-shift-id">
+        <div class="form-grid">
+          <div class="form-group"><label>Date</label><input type="date" id="edit-date"></div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="edit-category">
+              <option value="watering">Watering</option>
+              <option value="planting">Planting</option>
+              <option value="harvesting">Harvesting</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="monitoring">Monitoring</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Start Time</label><input type="time" id="edit-start"></div>
+          <div class="form-group"><label>End Time</label><input type="time" id="edit-end"></div>
+          <div class="form-group"><label>Title</label><input type="text" id="edit-title"></div>
+          <div class="form-group"><label>Capacity</label><input type="number" id="edit-capacity" min="1" max="6"></div>
+          <div class="form-group full-width"><label>Description</label><textarea id="edit-description"></textarea></div>
+          <div class="form-group full-width"><button class="btn-primary" onclick="handleUpdateShift()">Save Changes</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DIALOG -->
+  <div class="confirm-overlay" id="confirm-dialog">
+    <div class="confirm-dialog">
+      <h3 id="confirm-title"></h3>
+      <p id="confirm-message"></p>
+      <div class="actions">
+        <button class="btn-outline" onclick="closeConfirm()">Cancel</button>
+        <button class="btn-danger" id="confirm-action-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
