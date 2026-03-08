@@ -16,16 +16,25 @@
       <h1 class="sr-only">CanU Grow</h1>
       <p class="subtitle">University of Manitoba</p>
 
-      <!-- Step 1: Enter email + join code -->
+      <!-- Step 1: Enter email (returning member) -->
       <div id="auth-step-login">
+        <input type="email" id="login-email" placeholder="Your email address">
+        <button class="btn-primary" onclick="handleLogin()">Send Login Link</button>
+        <p class="hint">We'll email you a magic link — no password needed.</p>
+        <p class="hint" style="margin-top:12px;">New member? <a href="#" onclick="showNewMemberStep()">Join here</a></p>
+      </div>
+
+      <!-- Step 1b: New member signup -->
+      <div id="auth-step-new" style="display:none;">
         <div class="join-code-section">
           <label>Join Code</label>
           <input type="text" id="join-code" placeholder="Enter join code" autocomplete="off">
         </div>
-        <input type="email" id="login-email" placeholder="Your email address">
+        <input type="email" id="new-email" placeholder="Your email address">
         <input type="text" id="login-name" placeholder="Your name">
-        <button class="btn-primary" onclick="handleLogin()">Send Login Link</button>
+        <button class="btn-primary" onclick="handleNewMemberLogin()">Join & Send Login Link</button>
         <p class="hint">We'll email you a magic link — no password needed.</p>
+        <p class="hint" style="margin-top:12px;">Already a member? <a href="#" onclick="showLoginStep()">Sign in</a></p>
       </div>
 
       <!-- Step 2: Check your email -->

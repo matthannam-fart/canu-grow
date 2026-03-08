@@ -34,22 +34,39 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// Returning member login
 async function handleLogin() {
-  var code = document.getElementById('join-code').value.trim();
   var email = document.getElementById('login-email').value.trim();
+  if (!email) { showToast('Please enter your email.', 'error'); return; }
+
+  try {
+    await signInWithMagicLink(email);
+    document.getElementById('auth-step-login').style.display = 'none';
+    document.getElementById('auth-step-new').style.display = 'none';
+    document.getElementById('auth-step-sent').style.display = '';
+    document.getElementById('sent-email').textContent = email;
+  } catch (err) {
+    showToast('Login failed: ' + err.message, 'error');
+  }
+}
+
+// New member signup
+async function handleNewMemberLogin() {
+  var code = document.getElementById('join-code').value.trim();
+  var email = document.getElementById('new-email').value.trim();
   var name = document.getElementById('login-name').value.trim();
 
   if (!code) { showToast('Please enter the join code.', 'error'); return; }
   if (!email) { showToast('Please enter your email.', 'error'); return; }
   if (!name) { showToast('Please enter your name.', 'error'); return; }
 
-  // Store name for after auth completes
   localStorage.setItem('canu_pending_name', name);
   localStorage.setItem('canu_join_code', code);
 
   try {
     await signInWithMagicLink(email);
     document.getElementById('auth-step-login').style.display = 'none';
+    document.getElementById('auth-step-new').style.display = 'none';
     document.getElementById('auth-step-sent').style.display = '';
     document.getElementById('sent-email').textContent = email;
   } catch (err) {
@@ -59,6 +76,13 @@ async function handleLogin() {
 
 function showLoginStep() {
   document.getElementById('auth-step-login').style.display = '';
+  document.getElementById('auth-step-new').style.display = 'none';
+  document.getElementById('auth-step-sent').style.display = 'none';
+}
+
+function showNewMemberStep() {
+  document.getElementById('auth-step-login').style.display = 'none';
+  document.getElementById('auth-step-new').style.display = '';
   document.getElementById('auth-step-sent').style.display = 'none';
 }
 
