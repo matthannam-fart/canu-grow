@@ -165,6 +165,7 @@ async function initApp(session) {
   var dateInput = document.getElementById('shift-date');
   if (dateInput) dateInput.value = formatDateInput(tomorrow);
 
+  generateRecurringShifts();
   loadWeekData();
   loadMySignups();
   loadJobs();

@@ -337,3 +337,11 @@ async function validateJoinCode(code) {
   const stored = await getConfig('join_code');
   return stored && code.toUpperCase().trim() === stored.toUpperCase().trim();
 }
+
+// --- Recurring Shifts ---
+
+async function generateRecurringShifts() {
+  const { data, error } = await db.rpc('generate_recurring_shifts', { weeks_ahead: 8 });
+  if (error) console.warn('Recurring shift generation failed:', error.message);
+  return data;
+}
