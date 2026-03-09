@@ -114,19 +114,29 @@ async function deleteJob(jobId) {
 async function getShiftsForWeek(weekStart) {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 7);
+  return getShiftsForRange(formatDateISO(weekStart), formatDateISO(weekEnd));
+}
 
+async function getShiftsForMonth(year, month) {
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 1);
+  return getShiftsForRange(formatDateISO(start), formatDateISO(end));
+}
+
+async function getShiftsForRange(startDate, endDate) {
   const { data: shifts, error } = await db
     .from('shifts')
     .select('*')
-    .gte('date', formatDateISO(weekStart))
-    .lt('date', formatDateISO(weekEnd))
+    .gte('date', startDate)
+    .lt('date', endDate)
     .order('date')
     .order('start_time');
 
   if (error) throw error;
 
-  // Fetch signups for these shifts
   const shiftIds = shifts.map(s => s.id);
+  if (shiftIds.length === 0) return [];
+
   const { data: signups } = await db
     .from('signups')
     .select('*')

@@ -121,24 +121,13 @@
 
       <!-- Calendar -->
       <div id="view-calendar">
-        <div class="week-nav">
-          <div class="week-nav-controls">
-            <button class="btn-nav" onclick="prevWeek()">&lsaquo; Prev</button>
-            <button class="btn-nav" onclick="goToday()">Today</button>
-            <button class="btn-nav" onclick="nextWeek()">Next &rsaquo;</button>
-          </div>
-          <h2 id="week-title"></h2>
-          <div class="view-toggle">
-            <button class="active" onclick="setViewMode('week', this)">Week</button>
-            <button onclick="setViewMode('day', this)">Day</button>
-          </div>
+        <div class="month-nav">
+          <button class="btn-nav" onclick="prevMonth()">&lsaquo; Prev</button>
+          <h2 id="month-title"></h2>
+          <button class="btn-nav" onclick="goThisMonth()">Today</button>
+          <button class="btn-nav" onclick="nextMonth()">Next &rsaquo;</button>
         </div>
-        <div class="week-view" id="week-view">
-          <div class="week-grid" id="week-grid"></div>
-        </div>
-        <div class="day-view" id="day-view">
-          <div id="day-view-content"></div>
-        </div>
+        <div class="month-grid" id="month-grid"></div>
       </div>
 
       <!-- My Schedule -->

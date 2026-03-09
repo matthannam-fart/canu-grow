@@ -223,21 +223,16 @@ button {
 .commitment-item .commitment-title { font-weight: 500; color: var(--text); }
 .commitment-item .commitment-meta { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
 
-/* --- Week Navigation --- */
-.week-nav {
+/* --- Month Navigation --- */
+.month-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-.week-nav-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.week-nav h2 { font-size: 20px; }
+.month-nav h2 { font-size: 20px; min-width: 200px; text-align: center; }
 
 .btn-nav {
   padding: 6px 14px;
@@ -266,31 +261,78 @@ button {
 }
 .view-toggle button.active { background: var(--sage); color: #fff; }
 
-/* --- Week View Grid --- */
-.week-grid {
+/* --- Month View Grid --- */
+.month-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-.day-column {
-  min-height: 200px;
-}
-
-.day-column-header {
+.month-day-header {
   text-align: center;
   padding: 8px 4px;
   font-size: 12px;
   color: var(--text-soft);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid var(--border);
-  margin-bottom: 8px;
+  background: var(--cream);
 }
-.day-column-header .day-number { font-size: 20px; color: var(--text); display: block; font-weight: 700; font-family: 'Playfair Display', serif; }
-.day-column-header.today { border-bottom-color: var(--sage); }
-.day-column-header.today .day-number { color: var(--sage); }
+
+.month-cell {
+  background: var(--warm-white);
+  min-height: 90px;
+  padding: 4px;
+  vertical-align: top;
+}
+.month-cell.other-month { background: #f5f1ea; opacity: 0.5; }
+.month-cell.today { background: #f0f7f2; }
+
+.month-cell-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding: 2px 6px;
+  margin-bottom: 2px;
+}
+.month-cell-date.today {
+  color: #fff;
+  background: var(--sage);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.month-shift {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all var(--transition);
+  border-left: 3px solid transparent;
+}
+.month-shift:hover { opacity: 0.85; transform: scale(1.02); }
+.month-shift.signed-up { font-weight: 700; }
+.month-shift.full { opacity: 0.5; }
+
+.month-shift.cat-maintenance { background: color-mix(in srgb, var(--cat-maintenance) 15%, white); border-left-color: var(--cat-maintenance); color: var(--text); }
+.month-shift.cat-fertilize { background: color-mix(in srgb, var(--cat-fertilize) 15%, white); border-left-color: var(--cat-fertilize); color: var(--text); }
+.month-shift.cat-harvest { background: color-mix(in srgb, var(--cat-harvest) 15%, white); border-left-color: var(--cat-harvest); color: var(--text); }
+
+.month-shift-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.month-shift-slots { font-size: 10px; color: var(--text-soft); white-space: nowrap; margin-left: 4px; }
 
 /* --- Job Board --- */
 .job-board { display: none; }
@@ -318,11 +360,9 @@ button {
   bottom: 0;
   width: 4px;
 }
-.job-board-card.cat-watering::before    { background: var(--cat-watering); }
-.job-board-card.cat-planting::before    { background: var(--cat-planting); }
-.job-board-card.cat-harvesting::before  { background: var(--cat-harvesting); }
 .job-board-card.cat-maintenance::before { background: var(--cat-maintenance); }
-.job-board-card.cat-monitoring::before  { background: var(--cat-monitoring); }
+.job-board-card.cat-fertilize::before  { background: var(--cat-fertilize); }
+.job-board-card.cat-harvest::before    { background: var(--cat-harvest); }
 
 .job-board-info { flex: 1; padding-left: 8px; }
 .job-board-info h3 { font-size: 16px; margin-bottom: 2px; }
@@ -362,11 +402,9 @@ button {
   bottom: 0;
   width: 4px;
 }
-.shift-card.cat-watering::before    { background: var(--cat-watering); }
-.shift-card.cat-planting::before    { background: var(--cat-planting); }
-.shift-card.cat-harvesting::before  { background: var(--cat-harvesting); }
 .shift-card.cat-maintenance::before { background: var(--cat-maintenance); }
-.shift-card.cat-monitoring::before  { background: var(--cat-monitoring); }
+.shift-card.cat-fertilize::before  { background: var(--cat-fertilize); }
+.shift-card.cat-harvest::before    { background: var(--cat-harvest); }
 
 .shift-card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; padding-left: 6px; }
 .shift-card-time { font-size: 12px; color: var(--text-soft); padding-left: 6px; }
@@ -392,10 +430,6 @@ button {
 .slot-dot.filled { background: var(--sage); }
 .slot-dot.empty { background: none; border: 2px dashed var(--border); }
 
-/* --- Day View --- */
-.day-view { display: none; }
-.day-view.visible { display: block; }
-.week-view.hidden { display: none; }
 
 .day-shift-row {
   display: flex;
@@ -788,8 +822,9 @@ button {
   }
   .sidebar, .right-panel { display: none; }
   .app-header { flex-wrap: wrap; gap: 8px; }
-  .week-grid { grid-template-columns: 1fr; }
-  .day-column { min-height: auto; }
+  .month-grid { font-size: 11px; }
+  .month-cell { min-height: 60px; }
+  .month-shift { font-size: 10px; padding: 2px 4px; }
   .form-grid { grid-template-columns: 1fr; }
 }
 

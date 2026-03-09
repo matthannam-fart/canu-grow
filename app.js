@@ -8,8 +8,8 @@ var USER_IS_ADMIN = false;
 var currentMember = null;
 
 var state = {
-  currentWeekStart: getMonday(new Date()),
-  viewMode: 'week',
+  currentMonth: new Date().getMonth(),
+  currentYear: new Date().getFullYear(),
   selectedDate: new Date(),
   currentView: 'calendar',
   shifts: [],
@@ -166,7 +166,7 @@ async function initApp(session) {
   if (dateInput) dateInput.value = formatDateInput(tomorrow);
 
   generateRecurringShifts();
-  loadWeekData();
+  loadMonthData();
   loadMySignups();
   loadJobs();
   renderMiniCalendar();
@@ -197,40 +197,36 @@ function showView(view) {
 }
 
 // ==========================================
-// Week Navigation
+// Month Navigation
 // ==========================================
 
-function prevWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() - 7); loadWeekData(); }
-function nextWeek() { state.currentWeekStart.setDate(state.currentWeekStart.getDate() + 7); loadWeekData(); }
-function goToday() { state.currentWeekStart = getMonday(new Date()); state.selectedDate = new Date(); loadWeekData(); renderMiniCalendar(); }
-
-function setViewMode(mode, btn) {
-  state.viewMode = mode;
-  document.querySelectorAll('#view-calendar .view-toggle button').forEach(function(b) { b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  document.getElementById('week-view').classList.toggle('hidden', mode !== 'week');
-  document.getElementById('day-view').classList.toggle('visible', mode === 'day');
-  if (mode === 'day') renderDayView();
-}
+function prevMonth() { state.currentMonth--; if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; } loadMonthData(); }
+function nextMonth() { state.currentMonth++; if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; } loadMonthData(); }
+function goThisMonth() { var now = new Date(); state.currentMonth = now.getMonth(); state.currentYear = now.getFullYear(); state.selectedDate = now; loadMonthData(); renderMiniCalendar(); }
 
 // ==========================================
 // Data Loading
 // ==========================================
 
-async function loadWeekData() {
-  updateWeekTitle();
-  showWeekSkeleton();
+async function loadMonthData() {
+  updateMonthTitle();
+  showMonthSkeleton();
   try {
-    state.shifts = await getShiftsForWeek(state.currentWeekStart);
-    renderWeekView();
-    if (state.viewMode === 'day') renderDayView();
+    state.shifts = await getShiftsForMonth(state.currentYear, state.currentMonth);
+    renderMonthView();
     updateStats();
+    state.miniCalMonth = new Date(state.currentYear, state.currentMonth, 1);
     renderMiniCalendar();
   } catch (err) {
     showToast('Failed to load shifts: ' + err.message, 'error');
     state.shifts = [];
-    renderWeekView();
+    renderMonthView();
   }
+}
+
+function updateMonthTitle() {
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-title').textContent = months[state.currentMonth] + ' ' + state.currentYear;
 }
 
 async function loadMySignups() {
@@ -311,45 +307,67 @@ function renderJobBoard() {
 }
 
 // ==========================================
-// Week View
+// Month View
 // ==========================================
 
-function renderWeekView() {
-  var grid = document.getElementById('week-grid');
-  var weekDates = getWeekDates(state.currentWeekStart);
+function renderMonthView() {
+  var grid = document.getElementById('month-grid');
   var today = new Date(); today.setHours(0, 0, 0, 0);
+  var first = new Date(state.currentYear, state.currentMonth, 1);
+  var startDay = (first.getDay() + 6) % 7; // Monday = 0
+  var daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+  var prevMonthDays = new Date(state.currentYear, state.currentMonth, 0).getDate();
 
   var html = '';
-  weekDates.forEach(function(date) {
+  // Day headers
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d) {
+    html += '<div class="month-day-header">' + d + '</div>';
+  });
+
+  // Previous month padding
+  for (var p = startDay - 1; p >= 0; p--) {
+    html += '<div class="month-cell other-month"><div class="month-cell-date">' + (prevMonthDays - p) + '</div></div>';
+  }
+
+  // Days of month
+  for (var d = 1; d <= daysInMonth; d++) {
+    var date = new Date(state.currentYear, state.currentMonth, d);
     var dateStr = formatDateISO(date);
     var isToday = date.getTime() === today.getTime();
     var dayShifts = state.shifts.filter(function(s) { return s.date === dateStr; });
 
-    html += '<div class="day-column">';
-    html += '<div class="day-column-header ' + (isToday ? 'today' : '') + '"><span class="day-number">' + date.getDate() + '</span>' + getDayName(date) + '</div>';
+    html += '<div class="month-cell' + (isToday ? ' today' : '') + '">';
+    html += '<div class="month-cell-date' + (isToday ? ' today' : '') + '">' + d + '</div>';
 
-    if (dayShifts.length === 0) {
-      html += '<p style="text-align:center;color:var(--text-soft);font-size:12px;padding:20px 0;">No shifts</p>';
-    } else {
-      dayShifts.forEach(function(shift) {
-        var isSignedUp = isUserSignedUp(shift);
-        html += '<div class="shift-card cat-' + shift.category + (isSignedUp ? ' user-signed-up' : '') + '" onclick="openShiftModal(\'' + shift.id + '\')">';
-        html += '<div class="shift-card-title">' + escapeHtml(shift.title) + '</div>';
-        html += '<div class="shift-card-time">' + formatTimeDisplay(shift.start_time) + ' – ' + formatTimeDisplay(shift.end_time) + '</div>';
-        html += '<div class="shift-card-slots">' + renderSlotDots(shift) + '</div>';
-        html += '</div>';
-      });
-    }
+    dayShifts.forEach(function(shift) {
+      var isSignedUp = isUserSignedUp(shift);
+      var isFull = shift.spotsRemaining <= 0;
+      html += '<div class="month-shift cat-' + shift.category + (isSignedUp ? ' signed-up' : '') + (isFull ? ' full' : '') + '" onclick="openShiftModal(\'' + shift.id + '\')">';
+      html += '<span class="month-shift-title">' + escapeHtml(shift.title) + '</span>';
+      html += '<span class="month-shift-slots">' + shift.signupCount + '/' + shift.capacity + '</span>';
+      html += '</div>';
+    });
+
     html += '</div>';
-  });
+  }
+
+  // Next month padding
+  var total = startDay + daysInMonth;
+  for (var n = 1; n <= (7 - total % 7) % 7; n++) {
+    html += '<div class="month-cell other-month"><div class="month-cell-date">' + n + '</div></div>';
+  }
+
   grid.innerHTML = html;
 }
 
-function showWeekSkeleton() {
-  var grid = document.getElementById('week-grid');
+function showMonthSkeleton() {
+  var grid = document.getElementById('month-grid');
   var html = '';
-  for (var i = 0; i < 7; i++) {
-    html += '<div class="day-column"><div class="day-column-header"><span class="day-number">&nbsp;</span>&nbsp;</div><div class="skeleton skeleton-card"></div></div>';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(function(d) {
+    html += '<div class="month-day-header">' + d + '</div>';
+  });
+  for (var i = 0; i < 35; i++) {
+    html += '<div class="month-cell"><div class="skeleton" style="height:60px;"></div></div>';
   }
   grid.innerHTML = html;
 }
@@ -366,36 +384,6 @@ function renderSlotDots(shift) {
     }
   }
   return html;
-}
-
-// ==========================================
-// Day View
-// ==========================================
-
-function renderDayView() {
-  var container = document.getElementById('day-view-content');
-  var dateStr = formatDateISO(state.selectedDate);
-  var dayShifts = state.shifts.filter(function(s) { return s.date === dateStr; });
-
-  if (dayShifts.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🌱</div><h3>No shifts on ' + formatDateReadable(state.selectedDate) + '</h3></div>';
-    return;
-  }
-
-  var html = '<h3 style="margin-bottom:12px;">' + formatDateReadable(state.selectedDate) + '</h3>';
-  dayShifts.forEach(function(shift) {
-    var isSignedUp = isUserSignedUp(shift);
-    var isFull = shift.spotsRemaining <= 0;
-    html += '<div class="day-shift-row cat-' + shift.category + '" onclick="openShiftModal(\'' + shift.id + '\')">';
-    html += '<div class="day-shift-info"><h3>' + escapeHtml(shift.title) + '</h3><div class="time">' + formatTimeDisplay(shift.start_time) + ' – ' + formatTimeDisplay(shift.end_time) + '</div>';
-    if (shift.description) html += '<div class="description">' + escapeHtml(shift.description) + '</div>';
-    html += '</div><div class="day-shift-slots">' + renderSlotDots(shift) + '</div>';
-    if (isSignedUp) html += '<button class="btn-signup-inline cancel" onclick="event.stopPropagation();doCancel(\'' + shift.id + '\')">Cancel</button>';
-    else if (isFull) html += '<button class="btn-signup-inline full" disabled>Full</button>';
-    else html += '<button class="btn-signup-inline" onclick="event.stopPropagation();doSignUp(\'' + shift.id + '\')">Sign Up</button>';
-    html += '</div>';
-  });
-  container.innerHTML = html;
 }
 
 // ==========================================
@@ -487,7 +475,7 @@ async function handleUpdateShift() {
     });
     closeEditModal();
     showToast('Shift updated!', 'success');
-    loadWeekData();
+    loadMonthData();
   } catch (err) {
     showToast('Update failed: ' + err.message, 'error');
   }
@@ -503,7 +491,7 @@ async function doSignUp(shiftId) {
   try {
     await signUp(shiftId);
     showToast('You\'re signed up!', 'success');
-    loadWeekData();
+    loadMonthData();
     loadMySignups();
     if (state.currentView === 'job-board') loadJobBoard();
   } catch (err) {
@@ -518,7 +506,7 @@ async function doCancel(shiftId) {
     try {
       await cancelSignup(shiftId);
       showToast('Signup cancelled.', 'success');
-      loadWeekData();
+      loadMonthData();
       loadMySignups();
       if (state.currentView === 'job-board') loadJobBoard();
     } catch (err) {
@@ -533,7 +521,7 @@ function confirmDeleteShift(shiftId) {
     try {
       await deleteShift(shiftId);
       showToast('Shift deleted.', 'success');
-      loadWeekData();
+      loadMonthData();
     } catch (err) {
       showToast('Delete failed: ' + err.message, 'error');
     }
@@ -611,7 +599,7 @@ async function handleCreateShift() {
       date: date, start_time: start, end_time: end, capacity: capOverride || job.default_capacity
     });
     showToast('Shift scheduled!', 'success');
-    loadWeekData();
+    loadMonthData();
     if (state.currentView === 'admin') loadAdminView();
   } catch (err) { showToast('Failed: ' + err.message, 'error'); }
 }
@@ -647,7 +635,7 @@ async function handleAssignMember() {
     await assignMember(shiftId, email);
     showToast('Member assigned!', 'success');
     closeModal();
-    loadWeekData();
+    loadMonthData();
     loadMySignups();
     if (state.currentView === 'job-board') loadJobBoard();
   } catch (err) { showToast('Failed: ' + err.message, 'error'); }
@@ -720,7 +708,7 @@ function filterMembers(q) {
 async function loadAdminView() {
   loadJobs();
   try {
-    var shifts = await getShiftsForWeek(new Date());
+    var shifts = await getShiftsForMonth(new Date().getFullYear(), new Date().getMonth());
     var container = document.getElementById('admin-shifts-list');
     var upcoming = shifts.filter(function(s) { return new Date(s.date) >= new Date(new Date().toDateString()); }).sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
     if (upcoming.length === 0) { container.innerHTML = '<p style="color:var(--text-soft);font-size:14px;">No upcoming shifts.</p>'; return; }
@@ -804,7 +792,7 @@ function renderMiniCalendar() {
 
 function miniCalPrev() { state.miniCalMonth.setMonth(state.miniCalMonth.getMonth() - 1); renderMiniCalendar(); }
 function miniCalNext() { state.miniCalMonth.setMonth(state.miniCalMonth.getMonth() + 1); renderMiniCalendar(); }
-function selectMiniCalDate(ts) { state.selectedDate = new Date(ts); state.currentWeekStart = getMonday(state.selectedDate); loadWeekData(); }
+function selectMiniCalDate(ts) { var d = new Date(ts); state.selectedDate = d; state.currentMonth = d.getMonth(); state.currentYear = d.getFullYear(); loadMonthData(); }
 
 // ==========================================
 // Confirm / Toast
@@ -858,14 +846,6 @@ function formatTimeDisplay(t) {
 
 function getDayName(date) { return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(date).getDay()]; }
 
-function updateWeekTitle() {
-  var dates = getWeekDates(state.currentWeekStart);
-  var s = dates[0], e = dates[6];
-  var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById('week-title').textContent = s.getMonth() === e.getMonth()
-    ? m[s.getMonth()] + ' ' + s.getDate() + '–' + e.getDate() + ', ' + s.getFullYear()
-    : m[s.getMonth()] + ' ' + s.getDate() + ' – ' + m[e.getMonth()] + ' ' + e.getDate() + ', ' + e.getFullYear();
-}
 
 function isUserSignedUp(shift) { return (shift.members || []).some(function(m) { return m.email === USER_EMAIL; }); }
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
