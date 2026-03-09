@@ -214,6 +214,7 @@ async function loadMonthData() {
   try {
     state.shifts = await getShiftsForMonth(state.currentYear, state.currentMonth);
     renderMonthView();
+    renderMobileAgenda();
     updateStats();
     state.miniCalMonth = new Date(state.currentYear, state.currentMonth, 1);
     renderMiniCalendar();
@@ -358,6 +359,57 @@ function renderMonthView() {
   }
 
   grid.innerHTML = html;
+}
+
+function renderMobileAgenda() {
+  var container = document.getElementById('mobile-agenda');
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var daysInMonth = new Date(state.currentYear, state.currentMonth + 1, 0).getDate();
+
+  var html = '';
+  var hasAnyShifts = false;
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var date = new Date(state.currentYear, state.currentMonth, d);
+    var dateStr = formatDateISO(date);
+    var dayShifts = state.shifts.filter(function(s) { return s.date === dateStr; });
+
+    if (dayShifts.length === 0) continue;
+    hasAnyShifts = true;
+
+    var isToday = date.getTime() === today.getTime();
+    var dayName = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+    html += '<div class="agenda-day">';
+    html += '<div class="agenda-day-header' + (isToday ? ' today' : '') + '">' + (isToday ? 'Today — ' : '') + dayName + '</div>';
+
+    dayShifts.forEach(function(shift) {
+      var isSignedUp = isUserSignedUp(shift);
+      var isFull = shift.spotsRemaining <= 0;
+      html += '<div class="agenda-shift cat-' + shift.category + (isSignedUp ? ' signed-up' : '') + (isFull && !isSignedUp ? ' full' : '') + '" onclick="openShiftModal(\'' + shift.id + '\')">';
+      html += '<div class="agenda-shift-info">';
+      html += '<div class="agenda-shift-title">' + escapeHtml(shift.title) + '</div>';
+      html += '<div class="agenda-shift-time">' + formatTimeDisplay(shift.start_time) + ' – ' + formatTimeDisplay(shift.end_time) + '</div>';
+      html += '</div>';
+      html += '<div class="agenda-shift-slots"><div class="agenda-shift-slots-count">' + shift.spotsRemaining + '</div><div class="agenda-shift-slots-label">open</div></div>';
+      html += '<div class="agenda-shift-action">';
+      if (isSignedUp) {
+        html += '<button class="btn-signup-inline cancel" onclick="event.stopPropagation();doCancel(\'' + shift.id + '\')">Cancel</button>';
+      } else if (isFull) {
+        html += '<button class="btn-signup-inline full" disabled>Full</button>';
+      } else {
+        html += '<button class="btn-signup-inline" onclick="event.stopPropagation();doSignUp(\'' + shift.id + '\')">Sign Up</button>';
+      }
+      html += '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  if (!hasAnyShifts) {
+    html = '<div class="empty-state" style="padding:40px 0;"><h3>No shifts this month</h3></div>';
+  }
+
+  container.innerHTML = html;
 }
 
 function showMonthSkeleton() {
